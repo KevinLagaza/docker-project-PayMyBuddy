@@ -40,7 +40,7 @@ The infrastructure will run on a Docker-enabled server with **Ubuntu 20.04**. Th
 The database schema is initialized using the initdb directory, which contains SQL scripts to set up the required tables and initial data. These scripts are automatically executed when the MySQL container starts.
 
 #### The docker commands
-1. **Create a .env file that contains variables**
+1. **Create a .env file that contains the following variables**
 ```
 MYSQL_ROOT_PASSWORD=<your_root_password>
 MYSQL_DATABASE=<your_database_name>
@@ -49,7 +49,7 @@ MYSQL_PASSWORD=<your_mysql_password>
 ```
 2. **Create the required network and volume**
     - docker network create paymybuddy-network
-    - docker volume create paymybuddy-db-data
+    - docker volume create db-data
 3. **Building the backend image**
     - docker build -t transac_app .
 4. **Runnning the database container**
@@ -60,7 +60,7 @@ docker run -d \
   -p 3306:3306 \
   --restart on-failure
   --net paymybuddy-network \
-  -v paymybuddy-db-data:/var/lib/mysql \
+  -v db-data:/var/lib/mysql \
   -v ./initdb:/docker-entrypoint-initdb.d:ro \
   -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
   -e MYSQL_DATABASE=${MYSQL_DATABASE} \
@@ -75,7 +75,7 @@ docker run -d \
   ```
 - Wait until the database is healthy
 ---
-This a small script that can be run quickly instead of running `docker ps` repeatedly.
+Instead of running `docker ps` repeatedly, use this small script:
 ```
 echo "Waiting for database to be healthy..."
 until [ "$(docker inspect --format='{{.State.Health.Status}}' paymybuddy-db)" == "healthy" ]; do
@@ -87,9 +87,9 @@ echo "Database is healthy!"
 
 **![Database health](./images/database-healthy.png)**
 
-As a result, you should get **healthy** as shown in the above picture. Otherwise, inspect the logs via ```docker logs paymybuddy-db``` to get further details.
+As a result, you should get **healthy** as shown in the above picture. Otherwise, inspect the logs via `docker logs paymybuddy-db` to get further details.
 
-5. **Runnning the backend container**
+5. **Running the backend container**
 - After making sure that the database runs successfully, run this command as shown below:
 ```
 docker run -d \
@@ -113,11 +113,11 @@ The `docker-compose.yml` file will deploy both services:
 - **paymybuddy-backend:** Runs the Spring Boot application.
 - **paymybuddy-db:** MySQL database to handle user data and transactions. 
 
-Recall that in the docker-compose.yml file, I am starting the backend service based on the Dockerfile and not the image that I built previously. This allows me to automatically build or pull the images before stqrting the aforementionned services.
+Recall that in the docker-compose.yml file, I am starting the backend service based on the Dockerfile and not the image that I built previously. This allows me to automatically build or pull the images before starting the aforementionned services.
 ---
 
 #### Prerequisites
-Before anything, make sure the docker-compose is installed. Otherwise, run the commands mentionned below:
+Before anything, make sure that `docker-compose` is installed. Otherwise, run the commands mentionned below:
 
 - `sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose`
 - `sudo chmod +x /usr/local/bin/docker-compose`
@@ -126,8 +126,8 @@ Before anything, make sure the docker-compose is installed. Otherwise, run the c
 
 #### Running the app
 - Step 1: Starting and Checking the services
-  - `docker-compose up -d`
-  - `docker ps`
+  - docker-compose up -d
+  - docker ps
 ---
 As a result you should have your services that have started successfully with a healthy database.
 
@@ -147,16 +147,25 @@ We desire to push the images to a private Docker registry and deploy them using 
 
 ### Steps:
 1. Build the images for both backend and MySQL (to be done on the local machine)
-    - `docker pull mysql:8.0`
-    - `docker build -t transac_app .`
-    - `docker tag mysql:8.0 your_remote_machine_ip:5000/mysql:8.0`
-    - `docker tag transac_app:latest your_remote_machine_ip:5000/transac_app:v0`
+    - docker pull mysql:8.0
+    - docker build -t transac_app .
+    - docker tag mysql:8.0 your_remote_machine_ip:5000/mysql:8.0
+    - docker tag transac_app:latest your_remote_machine_ip:5000/transac_app:v0
 
 2. Deploy a private Docker registry (to be done on the remote machine)
     - Create the Docker Network: `docker network create registry_net`
-    - Start the Docker Registry used as a private registry: `docker run -d -p 5000:5000 --net registry_net --name registry-kevin registry:2.8.1`
-    - Start the Docker Registry UI to manage the registry:
-    `docker run -d \
+    - Start the Docker Registry used as a private registry: 
+```
+docker run -d \
+  -p 5000:5000 \
+  --net registry_net \
+  --name registry-kevin \
+  registry:2.8.1
+```
+- Start the Docker Registry UI to manage the registry:
+
+```
+docker run -d \
   -p 8090:80 \
   --net registry_net \
   -e NGINX_PROXY_PASS_URL=http://registry-kevin:5000 \
@@ -164,15 +173,14 @@ We desire to push the images to a private Docker registry and deploy them using 
   -e REGISTRY_TITLE=kevinconsulting \
   --name frontend-kevin \
   joxit/docker-registry-ui:2
-`
+```
 
 **![Inteface of RegistryUI](./images/registryUI-without-images.png)**
 
 3. Push your images to the private registry (to be done on the local machine)
-```
-docker push remote_machine_ip:5000/mysql:8.0
-docker push remote_machine_ip:5000/transac_app:v0
-```
+
+- docker push your_remote_machine_ip:5000/mysql:8.0
+- docker push your_remote_machine_ip:5000/transac_app:v0
 
 **![Images seen from the RegistryUI](./images/registryUI-with-images.png)**
 
@@ -180,16 +188,14 @@ docker push remote_machine_ip:5000/transac_app:v0
 
 **![Details of backend image from the RegistryUI](./images/details-of-backend-image.png)**
 
-4. Use the images (from the private registry) in `docker-compose.yml` 
-Modify the previous docker-compose.yml file as follows:
----
+4. Use the images (from the private registry) in `docker-compose.yml`
 
 ```bash
 version: '1.1'
 
 services:
   paymybuddy-db:
-    image: remote_machine_ip:5000/mysql:8.0
+    image: your_remote_machine_ip:5000/mysql:8.0
     container_name: paymybuddy-db
     restart: on-failure
     env_file:
@@ -209,7 +215,7 @@ services:
       start_period: 30s
 
   paymybuddy-backend:
-    image: remote_machine_ip:5000/transac_app:v0
+    image: your_remote_machine_ip:5000/transac_app:v0
     container_name: paymybuddy-backend
     restart: on-failure
     depends_on:
@@ -241,4 +247,4 @@ networks:
 ```
 ---
 
-**NB:** Replace the <remote_machine_ip> by its corresponding value.
+**NB:** Replace the <your_remote_machine_ip> by its corresponding value.
