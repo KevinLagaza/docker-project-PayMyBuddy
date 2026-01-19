@@ -51,6 +51,7 @@ The database schema is initialized using the initdb directory, which contains SQ
 3. **Building the backend image**
     - docker build -t transac_app .
 4. **Runnning the database container**
+- Execute the docker command
 ```
 docker run -d \
   --name paymybuddy-db \
@@ -70,8 +71,9 @@ docker run -d \
   --health-start-period=45s \
   mysql:8.0
   ```
-- wait until the database is healthy
-# Wait for database
+- Wait until the database is healthy
+---
+This a small script that can be run quickly instead of running `docker ps` repeatedly.
 ```
 echo "Waiting for database to be healthy..."
 until [ "$(docker inspect --format='{{.State.Health.Status}}' paymybuddy-db)" == "healthy" ]; do
@@ -86,6 +88,7 @@ echo "Database is healthy!"
 As a result, you should get **healthy** as shown in the above picture. Otherwise, inspect the logs via ```docker logs paymybuddy-db``` to get further details.
 
 5. **Runnning the backend container**
+- After making sure that the database runs successfully, run this command as shown below:
 ```
 docker run -d \
   --name paymybuddy-backend \
@@ -136,14 +139,14 @@ As a result you should have your services that have started successfully with a 
 
 ## Docker Registry
 
-We desire to push the images to a private Docker registry and deploy the images using Docker Compose.
+We desire to push the images to a private Docker registry and deploy them using Docker Compose.
 
 ### Steps:
 1. Build the images for both backend and MySQL (to be done on the local machine)
     - `docker pull mysql:8.0`
     - `docker build -t transac_app .`
-    - `docker tag mysql:8.0 remote_machine_ip:5000/mysql:8.0`
-    - `docker tag transac_app:latest remote_machine_ip:5000/transac_app:v0`
+    - `docker tag mysql:8.0 your_remote_machine_ip:5000/mysql:8.0`
+    - `docker tag transac_app:latest your_remote_machine_ip:5000/transac_app:v0`
 
 2. Deploy a private Docker registry (to be done on the remote machine)
     - Create the Docker Network: `docker network create registry_net`
