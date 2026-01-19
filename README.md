@@ -2,6 +2,7 @@
 
 This repository contains the *PayMyBuddy* application, which allows users to manage financial transactions. It includes a Spring Boot backend and MySQL database.
 
+**![Inside the app](./images/inside-the-app.png)**
 ---
 
 ## Context
@@ -137,8 +138,6 @@ As a result you should have your services that have started successfully with a 
 
 ---
 **![Login](./images/app-login.png)**
----
-**![Inside the app](./images/inside-the-app.png)**
 ---
 
 ## Docker Registry
