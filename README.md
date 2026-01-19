@@ -137,6 +137,7 @@ As a result you should have your services that have started successfully with a 
 
 **![Login](./images/app-login.png)**
 
+
 **![Navigating the transaction app](./images/inside-the-app.png)**
 
 ## Docker Registry
