@@ -135,8 +135,10 @@ As a result you should have your services that have started successfully with a 
 
 - Step 2: Now, we can check whether the app is working as expected.
 
+
+**![Login](./images/app-login.png)**
+---
 **![Inside the app](./images/inside-the-app.png)**
-<!-- **![Login](./images/app-login.png)** -->
 
 ## Docker Registry
 
