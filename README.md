@@ -40,11 +40,13 @@ The infrastructure will run on a Docker-enabled server with **Ubuntu 20.04**. Th
 The database schema is initialized using the initdb directory, which contains SQL scripts to set up the required tables and initial data. These scripts are automatically executed when the MySQL container starts.
 
 #### The docker commands
-1. **Add variables in your terminal**
-    - export MYSQL_ROOT_PASSWORD=<your_root_password>
-    - export MYSQL_DATABASE=<your_database_name>
-    - export MYSQL_USER=<your_mysql_user>
-    - export MYSQL_PASSWORD=<your_mysql_password>
+1. **Create a .env file that contains variables**
+```
+MYSQL_ROOT_PASSWORD=<your_root_password>
+MYSQL_DATABASE=<your_database_name>
+MYSQL_USER=<your_mysql_user>
+MYSQL_PASSWORD=<your_mysql_password>
+```
 2. **Create the required network and volume**
     - docker network create paymybuddy-network
     - docker volume create paymybuddy-db-data
