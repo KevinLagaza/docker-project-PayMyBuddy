@@ -87,11 +87,17 @@ until [ "$(docker inspect --format='{{.State.Health.Status}}' paymybuddy-db)" ==
 done
 echo "Database is healthy!"
 ```
+**![Database health](./images/database-healthy.png)**
+As a result, you should get **healthy** as shown in the above picture. Otherwise, inspect the logs via `docker logs paymybuddy-db` to get further details.
+
+- Checking the database initialization: `docker exec -it paymybuddy-db mysql -u root -prootpassword`
 ---
 
-**![Database health](./images/database-healthy.png)**
+**![Accessing DB container](./images/accessing-db-container.png)**
 
-As a result, you should get **healthy** as shown in the above picture. Otherwise, inspect the logs via `docker logs paymybuddy-db` to get further details.
+**![List of tables](./images/tables.png)**
+
+**![Exploring data](./images/tables-content.png)**
 
 5. **Running the backend container**
 - After making sure that the database runs successfully, run this command as shown below:
