@@ -48,6 +48,9 @@ MYSQL_DATABASE=<your_database_name>
 MYSQL_USER=<your_mysql_user>
 MYSQL_PASSWORD=<your_mysql_password>
 ```
+---
+NB: Do not forget not to commit the .env file. Otherwise, the security department will not be happy with you.
+---
 2. **Create the required network and volume**
     - docker network create paymybuddy-network
     - docker volume create db-data
@@ -113,8 +116,6 @@ docker run -d \
 The `docker-compose.yml` file will deploy both services:
 - **paymybuddy-backend:** Runs the Spring Boot application.
 - **paymybuddy-db:** MySQL database to handle user data and transactions. 
-
-Recall that in the docker-compose.yml file, I am starting the backend service based on the Dockerfile and not the image that I built previously. This allows me to automatically build or pull the images before starting the aforementionned services.
 ---
 
 #### Prerequisites
