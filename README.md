@@ -117,7 +117,7 @@ docker run -d \
 
 **![Backend container](./images/backend-container-manual-creation.png)**
 
-**![Inside the app](./images/inside-the-app.png)**
+**![App](./images/app.png)**
 
 ### Orchestration with Docker Compose
 
