@@ -1,8 +1,6 @@
 # PayMyBuddy - Financial Transaction Application
 
 This repository contains the *PayMyBuddy* application, which allows users to manage financial transactions. It includes a Spring Boot backend and MySQL database.
-
-**![Inside the app](./images/inside-the-app.png)**
 ---
 
 ## Context
@@ -40,22 +38,28 @@ The infrastructure will run on a Docker-enabled server with **Ubuntu 20.04**. Th
 #### Database Initialization
 The database schema is initialized using the initdb directory, which contains SQL scripts to set up the required tables and initial data. These scripts are automatically executed when the MySQL container starts.
 
-#### The docker commands
-1. **Create a .env file that contains the following variables**
-```
-MYSQL_ROOT_PASSWORD=<your_root_password>
-MYSQL_DATABASE=<your_database_name>
-MYSQL_USER=<your_mysql_user>
-MYSQL_PASSWORD=<your_mysql_password>
-```
----
-NB: Do not forget not to commit the .env file. Otherwise, the security department will not be happy with you.
+#### The required commands to be executed
+1. **Specify the environment variables**
+
+- export MYSQL_ROOT_PASSWORD=rootpassword
+- export MYSQL_DATABASE=paymybuddy
+- export MYSQL_USER=paymybuddy_user
+- export MYSQL_PASSWORD=paymybuddy_pass
 ---
 2. **Create the required network and volume**
     - docker network create paymybuddy-network
+
+**![Manual network creation](./images/manual-network-creation.png)**
+
     - docker volume create db-data
+
+**![Manual volume creation](./images/manual-volume-creation.png)**
+
 3. **Building the backend image**
-    - docker build -t transac_app .
+    - docker build -t transac_app:v0 .
+
+**![Image creation](./images/building-image.png)**
+
 4. **Runnning the database container**
 - Execute the docker command
 ```
@@ -77,16 +81,10 @@ docker run -d \
   --health-start-period=45s \
   mysql:8.0
   ```
-- Wait until the database is healthy
+- Wait until the database is healthy by executing the command shown below
 ---
-Instead of running `docker ps` repeatedly, use this small script:
-```
-echo "Waiting for database to be healthy..."
-until [ "$(docker inspect --format='{{.State.Health.Status}}' paymybuddy-db)" == "healthy" ]; do
-  sleep 5
-done
-echo "Database is healthy!"
-```
+`docker inspect --format='{{.State.Health.Status}}' paymybuddy-db`
+
 **![Database health](./images/database-healthy.png)**
 As a result, you should get **healthy** as shown in the above picture. Otherwise, inspect the logs via `docker logs paymybuddy-db` to get further details.
 
@@ -117,6 +115,10 @@ docker run -d \
   transac_app
 ```
 
+**![Backend container](./images/backend-container-manual-creation.png)**
+
+**![Inside the app](./images/inside-the-app.png)**
+
 ### Orchestration with Docker Compose
 
 The `docker-compose.yml` file will deploy both services:
@@ -125,13 +127,24 @@ The `docker-compose.yml` file will deploy both services:
 ---
 
 #### Prerequisites
+1. Docker Compose installation
 Before anything, make sure that `docker-compose` is installed. Otherwise, run the commands mentionned below:
 
 - `sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose`
 - `sudo chmod +x /usr/local/bin/docker-compose`
 - `docker-compose -v` 
 ---
-
+2. **Create a .env file**
+- vi .env
+- Copy and paste the following variables inside the .env file
+```
+MYSQL_ROOT_PASSWORD=rootpassword
+MYSQL_DATABASE=paymybuddy
+MYSQL_USER=paymybuddy_user
+MYSQL_PASSWORD=paymybuddy_pass
+```
+---
+**NB:** Do not forget not to commit the .env file. Otherwise, the security department will not be happy with you!
 #### Running the app
 - Step 1: Starting and Checking the services
   - docker-compose up -d
@@ -195,62 +208,5 @@ docker run -d \
 **![Details of backend image from the RegistryUI](./images/details-of-backend-image.png)**
 
 4. Use the images (from the private registry) in `docker-compose.yml`
-
-```bash
-version: '1.1'
-
-services:
-  paymybuddy-db:
-    image: your_remote_machine_ip:5000/mysql:8.0
-    container_name: paymybuddy-db
-    restart: on-failure
-    env_file:
-      - .env
-    ports:
-      - "3306:3306"
-    volumes:
-      - db-data:/var/lib/mysql
-      - ./initdb:/docker-entrypoint-initdb.d:ro
-    networks:
-      - paymybuddy-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  paymybuddy-backend:
-    image: your_remote_machine_ip:5000/transac_app:v0
-    container_name: paymybuddy-backend
-    restart: on-failure
-    depends_on:
-      paymybuddy-db:
-        condition: service_healthy
-    environment:
-      # Spring datasource configuration
-      SPRING_DATASOURCE_URL: jdbc:mysql://paymybuddy-db:3306/${MYSQL_DATABASE}?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
-      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
-      # JPA/Hibernate configuration
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: "true"
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
-    ports:
-      - "8080:8080"
-    networks:
-      - paymybuddy-network
-
-volumes:
-  db-data:
-    name: paymybuddy-db-data
-
-networks:
-  paymybuddy-network:
-    name: paymybuddy-network
-    driver: bridge
-```
----
 
 **NB:** Replace the <your_remote_machine_ip> by its corresponding value.
