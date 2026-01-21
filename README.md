@@ -130,9 +130,9 @@ The `docker-compose.yml` file will deploy both services:
 1. Docker Compose installation
 Before anything, make sure that `docker-compose` is installed. Otherwise, run the commands mentionned below:
 
-- `sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose`
-- `sudo chmod +x /usr/local/bin/docker-compose`
-- `docker-compose -v` 
+- sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+- sudo chmod +x /usr/local/bin/docker-compose
+- docker-compose -v
 ---
 2. **Create a .env file**
 - vi .env
@@ -145,19 +145,27 @@ MYSQL_PASSWORD=paymybuddy_pass
 ```
 ---
 **NB:** Do not forget not to commit the .env file. Otherwise, the security department will not be happy with you!
+
+3. **Remove the previously created resources**
+- docker rm -f paymybuddy-backend paymybuddy-db
+- docker rmi -f transac_app:v0
+- docker volume rm db-data
+- docker network rm paymybuddy-network
 #### Running the app
 - Step 1: Starting and Checking the services
-  - docker-compose up -d
+  - docker-compose -f docker-compose.yml up -d
   - docker ps
 ---
 As a result you should have your services that have started successfully with a healthy database.
 
 **![Overview of the services](./images/docker-compose.png)**
 
-- Step 2: Now, we can check whether the app is working as expected.
+- Step 2: Now, type in your browser: `http://192.168.56.5:8080`.
 
 ---
 **![Login](./images/app-login.png)**
+
+**![App](./images/app.png)**
 ---
 
 ## Docker Registry
@@ -167,9 +175,9 @@ We desire to push the images to a private Docker registry and deploy them using 
 ### Steps:
 1. Build the images for both backend and MySQL (to be done on the local machine)
     - docker pull mysql:8.0
-    - docker build -t transac_app .
-    - docker tag mysql:8.0 your_remote_machine_ip:5000/mysql:8.0
-    - docker tag transac_app:latest your_remote_machine_ip:5000/transac_app:v0
+    - docker build -t transac_app:v0 .
+    - docker tag mysql:8.0 ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/mysql:8.0
+    - docker tag transac_app:v0 ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
 
 2. Deploy a private Docker registry (to be done on the remote machine)
     - Create the Docker Network: `docker network create registry_net`
@@ -198,8 +206,8 @@ docker run -d \
 
 3. Push your images to the private registry (to be done on the local machine)
 
-- docker push your_remote_machine_ip:5000/mysql:8.0
-- docker push your_remote_machine_ip:5000/transac_app:v0
+- docker push ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/mysql:8.0
+- docker push ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
 
 **![Images seen from the RegistryUI](./images/registryUI-with-images.png)**
 
@@ -207,6 +215,15 @@ docker run -d \
 
 **![Details of backend image from the RegistryUI](./images/details-of-backend-image.png)**
 
-4. Use the images (from the private registry) in `docker-compose.yml`
+At the same time, we can see the images on the remote machine by running the following:
+- curl http://localhost:5000/v2/_catalog
 
-**NB:** Replace the <your_remote_machine_ip> by its corresponding value.
+**![Images from private registry](./images/private-registry-from-terminal.png)**
+
+4. Use the images (from the private registry) in `docker-compose-registry.yml`
+- docker-compose -f docker-compose-registry.yml up -d 
+**![Docker Compose Registry](./images/docker-compose-registry.png)**
+
+Now, type in your browser: `http://192.168.56.5:8080`.
+
+**![App](./images/app.png)**

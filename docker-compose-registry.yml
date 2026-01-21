@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   paymybuddy-db:
-    image: mysql:8.0
+    image: ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/mysql:8.0
     container_name: paymybuddy-db
     restart: on-failure
     env_file:
@@ -19,10 +19,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 45s
+      start_period: 30s
 
   paymybuddy-backend:
-    image: transac_app:v0
+    image: ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
     container_name: paymybuddy-backend
     restart: on-failure
     depends_on:
