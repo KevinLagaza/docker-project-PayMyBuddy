@@ -128,6 +128,7 @@ The `docker-compose.yml` file will deploy both services:
 
 #### Prerequisites
 1. Docker Compose installation
+---
 Before anything, make sure that `docker-compose` is installed. Otherwise, run the commands mentionned below:
 
 - sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
@@ -172,14 +173,14 @@ As a result you should have your services that have started successfully with a 
 
 We desire to push the images to a private Docker registry and deploy them using Docker Compose.
 
-### Using `docker run`:
-1. Build the images for both backend and MySQL (to be done on the local machine)
+### Using `docker run`
+1. **Build the images for both backend and MySQL (to be done on the local machine)**
     - docker pull mysql:8.0
     - docker build -t transac_app:v0 .
     - docker tag mysql:8.0 ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/mysql:8.0
     - docker tag transac_app:v0 ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
 
-2. Deploy a private Docker registry (to be done on the remote machine)
+2. **Deploy a private Docker registry (to be done on the remote machine)**
     - Create the Docker Network: `docker network create registry-network`
     - Start the Docker Registry used as a private registry: 
 ```
@@ -204,7 +205,7 @@ docker run -d \
 
 **![Inteface of RegistryUI](./images/registryUI-without-images.png)**
 
-3. Push your images to the private registry (to be done on the local machine)
+3. **Push your images to the private registry (to be done on the local machine)**
 
 - docker push ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/mysql:8.0
 - docker push ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
@@ -223,6 +224,7 @@ At the same time, we can see the images on the remote machine by running the fol
 ### Using `docker-compose`
 
 **NB:** Recall that all the services mentionned below will be created on the same machine.
+
 1. **Start the registry service**
 
 - docker-compose -f docker-compose-registry.yml up -d private-registry private-registry-frontend
