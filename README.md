@@ -172,7 +172,7 @@ As a result you should have your services that have started successfully with a 
 
 We desire to push the images to a private Docker registry and deploy them using Docker Compose.
 
-### Steps:
+### Using `docker run`:
 1. Build the images for both backend and MySQL (to be done on the local machine)
     - docker pull mysql:8.0
     - docker build -t transac_app:v0 .
@@ -180,13 +180,13 @@ We desire to push the images to a private Docker registry and deploy them using 
     - docker tag transac_app:v0 ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
 
 2. Deploy a private Docker registry (to be done on the remote machine)
-    - Create the Docker Network: `docker network create registry_net`
+    - Create the Docker Network: `docker network create registry-network`
     - Start the Docker Registry used as a private registry: 
 ```
 docker run -d \
   -p 5000:5000 \
-  --net registry_net \
-  --name registry-kevin \
+  --net registry-network \
+  --name private-registry \
   registry:2.8.1
 ```
 - Start the Docker Registry UI to manage the registry:
@@ -194,11 +194,11 @@ docker run -d \
 ```
 docker run -d \
   -p 8090:80 \
-  --net registry_net \
-  -e NGINX_PROXY_PASS_URL=http://registry-kevin:5000 \
+  --net registry-network \
+  -e NGINX_PROXY_PASS_URL=http://private-registry:5000 \
   -e DELETE_IMAGES=true \
   -e REGISTRY_TITLE=kevinconsulting \
-  --name frontend-kevin \
+  --name private-registry-frontend \
   joxit/docker-registry-ui:2
 ```
 
@@ -220,10 +220,42 @@ At the same time, we can see the images on the remote machine by running the fol
 
 **![Images from private registry](./images/private-registry-from-terminal.png)**
 
-4. Use the images (from the private registry) in `docker-compose-registry.yml`
-- docker-compose -f docker-compose-registry.yml up -d 
+### Using `docker-compose`
+
+**NB:** Recall that all the services mentionned below will be created on the same machine.
+1. **Start the registry service**
+
+- docker-compose -f docker-compose-registry.yml up -d private-registry private-registry-frontend
+
 **![Docker Compose Registry](./images/docker-compose-registry.png)**
+
+- curl http://localhost:5000/v2/_catalog
+
+**![Images from private registry](./images/private-registry-from-terminal.png)**
+
+2. **Build and push images to private registry**
+```
+# Pull MySQL and push to private registry
+- docker pull mysql:8.0
+- docker tag mysql:8.0 localhost:5000/mysql:8.0
+- docker push localhost:5000/mysql:8.0
+
+# Build backend and push to private registry
+- docker build -t transac_app:v0 .
+- docker tag transac_app:v0 localhost:5000/transac_app:v0
+- docker push localhost:5000/transac_app:v0
+```
+
+**![Pushing to private registry](./images/pushing-images.png)**
+
+3. **Deploy the application**
+
+- docker-compose -f docker-compose-registry.yml up -d paymybuddy-db paymybuddy-backend
+- docker-compose ps
+
+**![Creating services based on private registry images](./images/docker-compose-private-registry.png)**
 
 Now, type in your browser: `http://192.168.56.5:8080`.
 
 **![App](./images/app.png)**
+
