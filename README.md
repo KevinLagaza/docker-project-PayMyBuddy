@@ -1,6 +1,4 @@
 # PayMyBuddy - Financial Transaction Application
-
-This repository contains the *PayMyBuddy* application, which allows users to manage financial transactions. It includes a Spring Boot backend and MySQL database.
 ---
 
 ## Context
