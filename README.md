@@ -1,70 +1,169 @@
-# PayMyBuddy - Financial Transaction Application
----
+# 💰 PayMyBuddy - Financial Transaction Application
 
-## Context
-
-*PayMyBuddy* is an application for managing financial transactions between friends. The current infrastructure is tightly coupled and manually deployed, resulting in inefficiencies. We aim to improve scalability and streamline the deployment process using Docker and container orchestration.
+A containerized financial transaction management application using Docker and Docker Compose.
 
 ---
 
-## Infrastructure
+## 📋 Table of Contents
 
-The infrastructure will run on a Docker-enabled server with **Ubuntu 20.04**. This project includes containerizing the Spring Boot backend and MySQL database and automating deployment using Docker Compose.
-
-### Components:
-
-- **Backend (Spring Boot):** Manages user data and transactions
-- **Database (MySQL):** Stores users, transactions, and account details
-- **Orchestration:** Using Docker Compose to manage the entire application stack
+- [Overview](#-overview)
+- [Architecture](#-architecture)
+- [Prerequisites](#-prerequisites)
+- [Manual Deployment](#-manual-deployment)
+  - [Step 1: Environment Variables](#step-1-environment-variables)
+  - [Step 2: Create Network and Volume](#step-2-create-network-and-volume)
+  - [Step 3: Build Backend Image](#step-3-build-backend-image)
+  - [Step 4: Run Database Container](#step-4-run-database-container)
+  - [Step 5: Run Backend Container](#step-5-run-backend-container)
+- [Docker Compose Deployment](#-docker-compose-deployment)
+- [Private Docker Registry](#-private-docker-registry)
+  - [Using Docker Run](#using-docker-run)
+  - [Using Docker Compose](#using-docker-compose)
+- [Troubleshooting](#-troubleshooting)
 
 ---
 
-## Application
+## 🎯 Overview
 
-*PayMyBuddy* is divided into two main services:
+**PayMyBuddy** is an application for managing financial transactions between friends. This project focuses on containerizing the application stack and automating deployment using Docker and Docker Compose.
 
-1. **Backend Service (Spring Boot):**
-   - Exposes an API to handle transactions and user interactions
-   - Connects to a MySQL database for persistent storage
+### ✨ Features
 
-2. **Database Service (MySQL):**
-   - Stores user and transaction data
-   - Exposed on port 3306 for the backend to connect
+| Feature | Description |
+|---------|-------------|
+| 💳 **Transaction Management** | Send and receive money between friends |
+| 👥 **User Management** | User registration and authentication |
+| 🐳 **Containerized** | Fully Dockerized application stack |
+| 🔄 **Orchestration** | Docker Compose for multi-container management |
+| 📦 **Private Registry** | Support for private Docker registry deployment |
 
-### Build and Test
+### 🛠️ Tech Stack
 
-#### Database Initialization
-The database schema is initialized using the initdb directory, which contains SQL scripts to set up the required tables and initial data. These scripts are automatically executed when the MySQL container starts.
+| Component | Technology |
+|-----------|------------|
+| Backend | Spring Boot |
+| Database | MySQL 8.0 |
+| Container Runtime | Docker |
+| Orchestration | Docker Compose |
+| Server OS | Ubuntu 20.04 |
 
-#### The required commands to be executed
-1. **Specify the environment variables**
-
-- export MYSQL_ROOT_PASSWORD=rootpassword
-- export MYSQL_DATABASE=paymybuddy
-- export MYSQL_USER=paymybuddy_user
-- export MYSQL_PASSWORD=paymybuddy_pass
 ---
-2. **Create the required network and volume**
-    - docker network create paymybuddy-network
 
-**![Manual network creation](./images/manual-network-creation.png)**
-
-    - docker volume create db-data
-
-**![Manual volume creation](./images/manual-volume-creation.png)**
-
-3. **Building the backend image**
-    - docker build -t transac_app:v0 .
-
-**![Image creation](./images/building-image.png)**
-
-4. **Runnning the database container**
-- Execute the docker command
+## 🏗️ Architecture
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PAYMYBUDDY ARCHITECTURE                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│                         ┌─────────────┐                         │
+│                         │   Browser   │                         │
+│                         │  (Client)   │                         │
+│                         └──────┬──────┘                         │
+│                                │                                 │
+│                                ▼                                 │
+│                         ┌─────────────┐                         │
+│                         │  Port 8080  │                         │
+│                         └──────┬──────┘                         │
+│                                │                                 │
+│  ┌─────────────────────────────┴─────────────────────────────┐  │
+│  │                  paymybuddy-network                        │  │
+│  │                                                            │  │
+│  │   ┌────────────────────┐      ┌────────────────────┐      │  │
+│  │   │  paymybuddy-backend│      │   paymybuddy-db    │      │  │
+│  │   │    (Spring Boot)   │─────▶│     (MySQL 8.0)    │      │  │
+│  │   │                    │      │                    │      │  │
+│  │   │    Port: 8080      │      │    Port: 3306      │      │  │
+│  │   └────────────────────┘      └─────────┬──────────┘      │  │
+│  │                                         │                  │  │
+│  └─────────────────────────────────────────┼──────────────────┘  │
+│                                            │                     │
+│                                            ▼                     │
+│                                   ┌────────────────┐            │
+│                                   │    db-data     │            │
+│                                   │   (Volume)     │            │
+│                                   └────────────────┘            │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 📦 Components
+
+| Service | Description | Port |
+|---------|-------------|------|
+| **paymybuddy-backend** | Spring Boot API for transactions and user management | 8080 |
+| **paymybuddy-db** | MySQL database for persistent storage | 3306 |
+
+---
+
+## 🔧 Prerequisites
+
+| Requirement | Version |
+|-------------|---------|
+| Docker | Latest |
+| Docker Compose | v2.23.3+ |
+| Ubuntu Server | 20.04 LTS |
+
+### 📥 Install Docker Compose
+```bash
+# Download Docker Compose
+sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
+
+# Make it executable
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Verify installation
+docker-compose -v
+```
+
+---
+
+## 🚀 Manual Deployment
+
+### Step 1: Environment Variables
+
+Set up the required environment variables:
+```bash
+export MYSQL_ROOT_PASSWORD=rootpassword
+export MYSQL_DATABASE=paymybuddy
+export MYSQL_USER=paymybuddy_user
+export MYSQL_PASSWORD=paymybuddy_pass
+```
+
+---
+
+### Step 2: Create Network and Volume
+```bash
+# Create Docker network
+docker network create paymybuddy-network
+```
+
+![Manual network creation](./images/manual-network-creation.png)
+```bash
+# Create Docker volume for database persistence
+docker volume create db-data
+```
+
+![Manual volume creation](./images/manual-volume-creation.png)
+
+---
+
+### Step 3: Build Backend Image
+```bash
+docker build -t transac_app:v0 .
+```
+
+![Image creation](./images/building-image.png)
+
+✅ **Expected result:** Image built successfully.
+
+---
+
+### Step 4: Run Database Container
+```bash
 docker run -d \
   --name paymybuddy-db \
   -p 3306:3306 \
-  --restart on-failure
+  --restart on-failure \
   --net paymybuddy-network \
   -v db-data:/var/lib/mysql \
   -v ./initdb:/docker-entrypoint-initdb.d:ro \
@@ -78,26 +177,40 @@ docker run -d \
   --health-retries=5 \
   --health-start-period=45s \
   mysql:8.0
-  ```
-- Wait until the database is healthy by executing the command shown below
----
-`docker inspect --format='{{.State.Health.Status}}' paymybuddy-db`
-
-**![Database health](./images/database-healthy.png)**
-As a result, you should get **healthy** as shown in the above picture. Otherwise, inspect the logs via `docker logs paymybuddy-db` to get further details.
-
-- Checking the database initialization: `docker exec -it paymybuddy-db mysql -u root -prootpassword`
----
-
-**![Accessing DB container](./images/accessing-db-container.png)**
-
-**![List of tables](./images/tables.png)**
-
-**![Exploring data](./images/tables-content.png)**
-
-5. **Running the backend container**
-- After making sure that the database runs successfully, run this command as shown below:
 ```
+
+#### 🔍 Verify Database Health
+```bash
+# Check health status (wait for "healthy")
+docker inspect --format='{{.State.Health.Status}}' paymybuddy-db
+```
+
+![Database health](./images/database-healthy.png)
+
+✅ **Expected result:** Status shows `healthy`.
+
+#### 🔍 Verify Database Initialization
+```bash
+# Connect to MySQL
+docker exec -it paymybuddy-db mysql -u root -prootpassword
+```
+
+![Accessing DB container](./images/accessing-db-container.png)
+```sql
+-- Check tables
+SHOW DATABASES;
+USE paymybuddy;
+SHOW TABLES;
+```
+
+![List of tables](./images/tables.png)
+
+![Exploring data](./images/tables-content.png)
+
+---
+
+### Step 5: Run Backend Container
+```bash
 docker run -d \
   --name paymybuddy-backend \
   --net paymybuddy-network \
@@ -110,87 +223,139 @@ docker run -d \
   -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
   -e SPRING_JPA_SHOW_SQL=true \
   -e SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQL8Dialect \
-  transac_app
+  transac_app:v0
 ```
 
-**![Backend container](./images/backend-container-manual-creation.png)**
+![Backend container](./images/backend-container-manual-creation.png)
 
-**![App](./images/app.png)**
+#### 🌐 Access the Application
 
-### Orchestration with Docker Compose
+Open your browser and navigate to: `http://<SERVER_IP>:8080`
 
-The `docker-compose.yml` file will deploy both services:
-- **paymybuddy-backend:** Runs the Spring Boot application.
-- **paymybuddy-db:** MySQL database to handle user data and transactions. 
+![App](./images/app.png)
+
+✅ **Manual deployment complete!**
+
 ---
 
-#### Prerequisites
-1. Docker Compose installation
----
-Before anything, make sure that `docker-compose` is installed. Otherwise, run the commands mentionned below:
+## 🐳 Docker Compose Deployment
 
-- sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
-- sudo chmod +x /usr/local/bin/docker-compose
-- docker-compose -v
----
-2. **Create a .env file**
-- vi .env
-- Copy and paste the following variables inside the .env file
+Docker Compose simplifies the deployment by managing all services in a single configuration file.
+
+### Step 1: Create Environment File
+
+Create a `.env` file with your credentials:
+```bash
+vi .env
 ```
+```env
 MYSQL_ROOT_PASSWORD=rootpassword
 MYSQL_DATABASE=paymybuddy
 MYSQL_USER=paymybuddy_user
 MYSQL_PASSWORD=paymybuddy_pass
 ```
----
-**NB:** Do not forget not to commit the .env file. Otherwise, the security department will not be happy with you!
 
-3. **Remove the previously created resources**
-- docker rm -f paymybuddy-backend paymybuddy-db
-- docker rmi -f transac_app:v0
-- docker volume rm db-data
-- docker network rm paymybuddy-network
-#### Running the app
-- Step 1: Starting and Checking the services
-  - docker-compose -f docker-compose.yml up -d
-  - docker ps
----
-As a result you should have your services that have started successfully with a healthy database.
+> ⚠️ **Security Warning:** Never commit the `.env` file to version control!
 
-**![Overview of the services](./images/docker-compose.png)**
+### Step 2: Clean Previous Resources
 
-- Step 2: Now, type in your browser: `http://192.168.56.5:8080`.
+If you deployed manually before, clean up:
+```bash
+# Remove containers
+docker rm -f paymybuddy-backend paymybuddy-db
 
----
-**![Login](./images/app-login.png)**
+# Remove image
+docker rmi -f transac_app:v0
 
-**![App](./images/app.png)**
----
+# Remove volume
+docker volume rm db-data
 
-## Docker Registry
-
-We desire to push the images to a private Docker registry and deploy them using Docker Compose.
-
-### Using `docker run`
-1. **Build the images for both backend and MySQL (to be done on the local machine)**
-    - docker pull mysql:8.0
-    - docker build -t transac_app:v0 .
-    - docker tag mysql:8.0 ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/mysql:8.0
-    - docker tag transac_app:v0 ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
-
-2. **Deploy a private Docker registry (to be done on the remote machine)**
-    - Create the Docker Network: `docker network create registry-network`
-    - Start the Docker Registry used as a private registry: 
+# Remove network
+docker network rm paymybuddy-network
 ```
+
+### Step 3: Deploy with Docker Compose
+```bash
+# Start all services
+docker-compose -f docker-compose.yml up -d
+
+# Verify services
+docker ps
+```
+
+![Overview of the services](./images/docker-compose.png)
+
+✅ **Expected result:** All services running with healthy database.
+
+### Step 4: Access the Application
+
+Open your browser and navigate to: `http://192.168.56.5:8080`
+
+![Login](./images/app-login.png)
+
+![App](./images/app.png)
+
+---
+
+## 📦 Private Docker Registry
+
+Deploy images using a private Docker registry for better security and control.
+
+### Architecture with Private Registry
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PRIVATE REGISTRY SETUP                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                   registry-network                       │    │
+│  │                                                          │    │
+│  │   ┌──────────────────┐      ┌──────────────────┐        │    │
+│  │   │ private-registry │      │ registry-frontend│        │    │
+│  │   │   (registry:2)   │◀─────│  (docker-ui)     │        │    │
+│  │   │   Port: 5000     │      │   Port: 8090     │        │    │
+│  │   └──────────────────┘      └──────────────────┘        │    │
+│  │            │                                             │    │
+│  └────────────┼─────────────────────────────────────────────┘    │
+│               │                                                  │
+│               ▼                                                  │
+│   ┌───────────────────────────────────────────────────┐         │
+│   │              Stored Images                         │         │
+│   │  • localhost:5000/mysql:8.0                       │         │
+│   │  • localhost:5000/transac_app:v0                  │         │
+│   └───────────────────────────────────────────────────┘         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Using Docker Run
+
+#### Step 1: Build and Tag Images (Local Machine)
+```bash
+# Pull and tag MySQL
+docker pull mysql:8.0
+docker tag mysql:8.0 <REGISTRY_URL>/mysql:8.0
+
+# Build and tag backend
+docker build -t transac_app:v0 .
+docker tag transac_app:v0 <REGISTRY_URL>/transac_app:v0
+```
+
+#### Step 2: Deploy Private Registry (Remote Machine)
+```bash
+# Create network
+docker network create registry-network
+
+# Start registry
 docker run -d \
   -p 5000:5000 \
   --net registry-network \
   --name private-registry \
   registry:2.8.1
-```
-- Start the Docker Registry UI to manage the registry:
 
-```
+# Start registry UI
 docker run -d \
   -p 8090:80 \
   --net registry-network \
@@ -201,61 +366,152 @@ docker run -d \
   joxit/docker-registry-ui:2
 ```
 
-**![Inteface of RegistryUI](./images/registryUI-without-images.png)**
+![Interface of RegistryUI](./images/registryUI-without-images.png)
 
-3. **Push your images to the private registry (to be done on the local machine)**
-
-- docker push ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/mysql:8.0
-- docker push ip10-0-22-4-d5og0l657ed000a3ui80-5000.direct.docker.labs.eazytraining.fr/transac_app:v0
-
-**![Images seen from the RegistryUI](./images/registryUI-with-images.png)**
-
-**![Details of mysql image from the RegistryUI](./images/details-of-mysql-image.png)**
-
-**![Details of backend image from the RegistryUI](./images/details-of-backend-image.png)**
-
-At the same time, we can see the images on the remote machine by running the following:
-- curl http://localhost:5000/v2/_catalog
-
-**![Images from private registry](./images/private-registry-from-terminal.png)**
-
-### Using `docker-compose`
-
-**NB:** Recall that all the services mentionned below will be created on the same machine.
-
-1. **Start the registry service**
-
-- docker-compose -f docker-compose-registry.yml up -d private-registry private-registry-frontend
-
-**![Docker Compose Registry](./images/docker-compose-registry.png)**
-
-- curl http://localhost:5000/v2/_catalog
-
-**![Images from private registry](./images/private-registry-from-terminal.png)**
-
-2. **Build and push images to private registry**
+#### Step 3: Push Images (Local Machine)
+```bash
+docker push <REGISTRY_URL>/mysql:8.0
+docker push <REGISTRY_URL>/transac_app:v0
 ```
+
+![Images seen from the RegistryUI](./images/registryUI-with-images.png)
+
+#### 🔍 Verify Images in Registry
+```bash
+curl http://localhost:5000/v2/_catalog
+```
+
+![Images from private registry](./images/private-registry-from-terminal.png)
+
+| Image | Details |
+|-------|---------|
+| MySQL | ![Details of mysql image](./images/details-of-mysql-image.png) |
+| Backend | ![Details of backend image](./images/details-of-backend-image.png) |
+
+---
+
+### Using Docker Compose
+
+#### Step 1: Start Registry Services
+```bash
+docker-compose -f docker-compose-registry.yml up -d private-registry private-registry-frontend
+```
+
+![Docker Compose Registry](./images/docker-compose-registry.png)
+
+#### Step 2: Build and Push Images
+```bash
 # Pull MySQL and push to private registry
-- docker pull mysql:8.0
-- docker tag mysql:8.0 localhost:5000/mysql:8.0
-- docker push localhost:5000/mysql:8.0
+docker pull mysql:8.0
+docker tag mysql:8.0 localhost:5000/mysql:8.0
+docker push localhost:5000/mysql:8.0
 
 # Build backend and push to private registry
-- docker build -t transac_app:v0 .
-- docker tag transac_app:v0 localhost:5000/transac_app:v0
-- docker push localhost:5000/transac_app:v0
+docker build -t transac_app:v0 .
+docker tag transac_app:v0 localhost:5000/transac_app:v0
+docker push localhost:5000/transac_app:v0
 ```
 
-**![Pushing to private registry](./images/pushing-images.png)**
+![Pushing to private registry](./images/pushing-images.png)
 
-3. **Deploy the application**
+#### Step 3: Deploy Application
+```bash
+# Start application services
+docker-compose -f docker-compose-registry.yml up -d paymybuddy-db paymybuddy-backend
 
-- docker-compose -f docker-compose-registry.yml up -d paymybuddy-db paymybuddy-backend
-- docker-compose ps
+# Verify services
+docker-compose ps
+```
 
-**![Creating services based on private registry images](./images/docker-compose-private-registry.png)**
+![Creating services based on private registry images](./images/docker-compose-private-registry.png)
 
-Now, type in your browser: `http://192.168.56.5:8080`.
+#### 🌐 Access the Application
 
-**![App](./images/app.png)**
+Open your browser and navigate to: `http://192.168.56.5:8080`
 
+![App](./images/app.png)
+
+✅ **Private registry deployment complete!**
+
+---
+
+## 🛠️ Troubleshooting
+
+| Issue | Possible Cause | Solution |
+|-------|----------------|----------|
+| Database not healthy | Initialization scripts failing | Check logs: `docker logs paymybuddy-db` |
+| Backend can't connect to DB | Network issues | Verify both containers are on same network |
+| Port already in use | Another service using port | Stop conflicting service or change port |
+| Image push fails | Registry not accessible | Verify registry is running and accessible |
+| Permission denied | Docker socket permissions | Add user to docker group: `sudo usermod -aG docker $USER` |
+
+### 🔍 Useful Commands
+```bash
+# Check container logs
+docker logs paymybuddy-backend
+docker logs paymybuddy-db
+
+# Check container health
+docker inspect --format='{{.State.Health.Status}}' paymybuddy-db
+
+# List networks
+docker network ls
+
+# List volumes
+docker volume ls
+
+# Check registry catalog
+curl http://localhost:5000/v2/_catalog
+
+# Enter container shell
+docker exec -it paymybuddy-backend /bin/sh
+docker exec -it paymybuddy-db mysql -u root -p
+```
+
+---
+
+## 📁 Project Structure
+```
+paymybuddy/
+├── docker-compose.yml              # Main deployment file
+├── docker-compose-registry.yml     # Registry deployment file
+├── Dockerfile                      # Backend image definition
+├── .env                            # Environment variables (DO NOT COMMIT)
+├── .env.example                    # Environment template
+├── initdb/
+│   └── init.sql                    # Database initialization scripts
+├── src/                            # Spring Boot source code
+├── images/                         # Documentation images
+└── README.md
+```
+
+---
+
+## 📊 Deployment Options Summary
+
+| Method | Complexity | Use Case |
+|--------|------------|----------|
+| Manual (`docker run`) | High | Learning, debugging |
+| Docker Compose | Low | Development, small deployments |
+| Private Registry + Compose | Medium | Production, team environments |
+
+---
+
+## 📚 Resources
+
+- [Docker Documentation](https://docs.docker.com/)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [Spring Boot Docker Guide](https://spring.io/guides/gs/spring-boot-docker/)
+- [MySQL Docker Image](https://hub.docker.com/_/mysql)
+
+---
+
+## 👨‍💻 Author
+
+**Kevin Lagaza**
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
